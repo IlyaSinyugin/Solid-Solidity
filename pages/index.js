@@ -1,9 +1,12 @@
 import { useState, useEffect } from "react";
 import PrimaryButton from "../components/primary-button";
+import abi from "../utils/Keyboards.json";
 
 export default function Home() {
   const [ethereum, setEthereum] = useState(undefined);
   const [connectedAccount, setConnectedAccount] = useState(undefined);
+
+  const contractAddress = "0xbcf75898e37267D90C16623f051FD348aeb29F9c";
 
   const handleAccounts = (accounts) => {
     if (accounts.length > 0) {
