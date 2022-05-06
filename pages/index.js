@@ -1,13 +1,33 @@
 import { useState, useEffect } from "react";
 import PrimaryButton from "../components/primary-button";
 import abi from "../utils/Keyboards.json";
+import { ethers } from "ethers";
 
 export default function Home() {
   const [ethereum, setEthereum] = useState(undefined);
   const [connectedAccount, setConnectedAccount] = useState(undefined);
+  const [keyboards, setKeyboards] = useState([]);
 
   const contractAddress = "0xbcf75898e37267D90C16623f051FD348aeb29F9c";
+  const contractABI = abi.abi;
 
+  const getKeyboards = async () => {
+    if (ethereum && connectedAccount) {
+      const provider = new ethers.providers.Web3Provider(ethereum);
+      const signer = provider.getSigner();
+      const keyboardsContract = new ethers.Contract(
+        contractAddress,
+        contractABI,
+        signer
+      );
+
+      const keyboards = await keyboardsContract.getKeyboards();
+      console.log("Retrieved keyboards...", keyboards);
+      setKeyboards(keyboards);
+    }
+  };
+  useEffect(() => getKeyboards(), [connectedAccount]);
+  // TODO last step that was done
   const handleAccounts = (accounts) => {
     if (accounts.length > 0) {
       const account = accounts[0];
