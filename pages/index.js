@@ -80,3 +80,5 @@ export default function Home() {
 
   return <p>Connected Account: {connectedAccount}</p>;
 }
+
+//TODO throws call revert exception
