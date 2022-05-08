@@ -1,33 +1,18 @@
+import { ethers } from "ethers";
 import { useState, useEffect } from "react";
 import PrimaryButton from "../components/primary-button";
+import Keyboard from "../components/keyboard";
 import abi from "../utils/Keyboards.json";
-import { ethers } from "ethers";
 
 export default function Home() {
   const [ethereum, setEthereum] = useState(undefined);
   const [connectedAccount, setConnectedAccount] = useState(undefined);
   const [keyboards, setKeyboards] = useState([]);
+  const [keyboardsLoading, setKeyboardsLoading] = useState(false);
 
-  const contractAddress = "0xbcf75898e37267D90C16623f051FD348aeb29F9c";
+  const contractAddress = "0x9C71bD759df479276F6eB215471aFF64cbf910A3";
   const contractABI = abi.abi;
 
-  const getKeyboards = async () => {
-    if (ethereum && connectedAccount) {
-      const provider = new ethers.providers.Web3Provider(ethereum);
-      const signer = provider.getSigner();
-      const keyboardsContract = new ethers.Contract(
-        contractAddress,
-        contractABI,
-        signer
-      );
-
-      const keyboards = await keyboardsContract.getKeyboards();
-      console.log("Retrieved keyboards...", keyboards);
-      setKeyboards(keyboards);
-    }
-  };
-  useEffect(() => getKeyboards(), [connectedAccount]);
-  // TODO last step that was done
   const handleAccounts = (accounts) => {
     if (accounts.length > 0) {
       const account = accounts[0];
@@ -49,36 +34,85 @@ export default function Home() {
     }
   };
   useEffect(() => getConnectedAccount(), []);
-  // when metamask installed it sets window.ethereum to an object that we can use to call
-  // functions on Metamask and on ETH blockchain
 
-  // connectedAccount - address of the account that is logged in
   const connectAccount = async () => {
     if (!ethereum) {
       alert("MetaMask is required to connect an account");
       return;
     }
+
     const accounts = await ethereum.request({ method: "eth_requestAccounts" });
     handleAccounts(accounts);
   };
 
+  const getKeyboards = async () => {
+    if (ethereum && connectedAccount) {
+      setKeyboardsLoading(true);
+      try {
+        const provider = new ethers.providers.Web3Provider(ethereum);
+        const signer = provider.getSigner();
+        const keyboardsContract = new ethers.Contract(
+          contractAddress,
+          contractABI,
+          signer
+        );
+
+        const keyboards = await keyboardsContract.getKeyboards();
+        console.log("Retrieved keyboards...", keyboards);
+
+        setKeyboards(keyboards);
+      } finally {
+        setKeyboardsLoading(false);
+      }
+    }
+  };
+  useEffect(() => getKeyboards(), [connectedAccount]);
+
   if (!ethereum) {
-    return <p>Please install Metamask to connect to this site</p>;
+    return <p>Please install MetaMask to connect to this site</p>;
   }
 
   if (!connectedAccount) {
     return (
       <PrimaryButton onClick={connectAccount}>
-        Connect Metamask Wallet
+        Connect MetaMask Wallet
       </PrimaryButton>
     );
-    // how this works is it basically calls connectAccount function upon clicking
-    // then if the window.ethereum is not empy handleAccounts is called, where accounts are passed
-    // on as an argument by calling "eth_requestAccounts" method. handleAccounts basically
-    // sets a value to an account if such exists
   }
 
-  return <p>Connected Account: {connectedAccount}</p>;
-}
+  if (keyboards.length > 0) {
+    return (
+      <div className="flex flex-col gap-4">
+        <PrimaryButton type="link" href="/create">
+          Create a Keyboard!
+        </PrimaryButton>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 p-2">
+          {keyboards.map(([kind, isPBT, filter], i) => (
+            <Keyboard key={i} kind={kind} isPBT={isPBT} filter={filter} />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
-//TODO throws call revert exception
+  if (keyboardsLoading) {
+    return (
+      <div className="flex flex-col gap-4">
+        <PrimaryButton type="link" href="/create">
+          Create a Keyboard!
+        </PrimaryButton>
+        <p>Loading Keyboards...</p>
+      </div>
+    );
+  }
+
+  // No keyboards yet
+  return (
+    <div className="flex flex-col gap-4">
+      <PrimaryButton type="link" href="/create">
+        Create a Keyboard!
+      </PrimaryButton>
+      <p>No keyboards yet!</p>
+    </div>
+  );
+}
